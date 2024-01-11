@@ -4,23 +4,25 @@ import { Edit } from "./icons/Edit";
 
 export const WishlistItem = ({item}: JSX.IntrinsicAttributes & {item?: ItemData}) => {
 	return (
-		<li class="wishlist-item row">
-			{
-				item?.poster &&
-				<div class="col-auto">
-					<div class="item-image-container">
-
+		<li class="wishlist-item">
+			<div class="row">
+				{
+					item?.poster &&
+					<div class="col-12 col-lg-1">
+						<div class="item-image-container">
+							<img src={item?.poster} />
+						</div>
 					</div>
+				}
+				<div class="col-12 col-lg">
+					<p class="item-subtitle">{`${itemTypeToString(item?.type)}${item?.year ? ` - ${item?.year}` : ''}`}</p>
+					<p class="h3">{item?.name}</p>
 				</div>
-			}
-			<div class="col">
-				<p class="item-subtitle">{`${itemTypeToString(item?.type)}${item?.year ? ` - ${item?.year}` : ''}`}</p>
-				<p class="item-title">{item?.name}</p>
-			</div>
-			<div class="col-auto">
-				<div class="item-actions-container">
-					<button type="button" class="btn-secondary btn-icon" title="Bearbeiten"><Edit /></button>
-					<button type="button" class="btn-danger btn-icon" title="Löschen"><Delete /></button>
+				<div class="col-12 col-lg-auto">
+					<div class="item-actions-container">
+						<button type="button" class="btn-secondary btn-icon" title="Bearbeiten"><Edit /></button>
+						<button type="button" class="btn-danger btn-icon" title="Löschen"><Delete /></button>
+					</div>
 				</div>
 			</div>
 		</li>

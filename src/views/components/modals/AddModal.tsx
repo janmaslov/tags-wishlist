@@ -2,7 +2,7 @@ import { ModalBase } from "../ModalBase"
 import { Image } from "../icons/Image";
 import { Loader } from "../icons/Loader";
 
-export const AddModal = (props?: {posterUrl?: string}) => {
+export const AddModal = () => {
 	return (
 		<ModalBase id="modal-add">
 			<div class="modal-header">
@@ -13,24 +13,11 @@ export const AddModal = (props?: {posterUrl?: string}) => {
 					<div class="row">
 						<div class="col-12 col-md-2">
 							<div id="container-poster">
-								{
-									props?.posterUrl ?
-									<img src={props?.posterUrl} /> :
-									<Image />
-								}
+								<Image />
 							</div>
 						</div>
 						<div class="col-12 col-md-10">
-							<div
-								class="row"
-								hx-trigger="change from:(#modal-add #name, #modal-add #year) throttle:500ms"
-								hx-get="/wishlist/add/queryposter"
-								hx-include="this"
-								hx-indicator="#modal-add .loading-spinner-overlay"
-								hx-select="#modal-add #container-poster"
-								hx-target="#modal-add #container-poster"
-								hx-swap="innerHTML"
-							>
+							<div class="row">
 								<div class="col-12">
 									<div class="form-group">
 										<label for="type">Medientyp</label>
@@ -49,19 +36,24 @@ export const AddModal = (props?: {posterUrl?: string}) => {
 								<div class="col-12 col-md-8">
 									<div class="form-group">
 										<label for="name">Name</label>
-										<input type="text" id="name" name="name" placeholder="z.B. Finding Nemo" required />
+										<input type="text" id="name" name="name" placeholder="z.B. Findet Nemo" required />
 									</div>
 								</div>
 								<div class="col-12 col-md-4">
 									<div class="form-group">
 										<label for="year">Jahr</label>
-										<input type="number" id="year" name="year" value={new Date().getUTCFullYear().toString()} min="1900" max="2100" required />
+										<input type="number" id="year" name="year" placeholder="2003" value={new Date().getUTCFullYear().toString()} min="1900" max="2100" required />
+									</div>
+								</div>
+								<div class="col-12">
+									<div class="form-group">
+										<label for="poster">Poster/Bild (optional)</label>
+										<input type="text" id="poster" name="poster" hx-on:change="changePoster(this.value)" />
 									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-					<input type="hidden" name="poster" />
 					<input type="hidden" name="createdBy" />
 				</div>
 				<div class="modal-footer">
@@ -73,6 +65,12 @@ export const AddModal = (props?: {posterUrl?: string}) => {
 				<Loader class="load-spin" />
 				Suche bei Open Movie Database...
 			</div>
+			<script>
+				{`const emptyPoster = '${<Image />}';
+				function changePoster(url){
+					document.querySelector('#modal-add #container-poster').innerHTML = (url?.length ?? 0) > 0 ? '<img src="'+ url +'" />' : emptyPoster;
+				}`}
+			</script>
 		</ModalBase>
 	);
 }

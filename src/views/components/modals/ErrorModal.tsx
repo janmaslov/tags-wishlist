@@ -2,7 +2,7 @@ import { ModalBase } from "../ModalBase"
 
 export const ErrorModal = (message: string) => {
 	return (
-		<ModalBase>
+		<ModalBase id="modal-error">
 			<div class="modal-header">
 				<h1>Aua!</h1>
 			</div>
