@@ -1,0 +1,24 @@
+{
+  "name": "xen-wishlist",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "bun run dev",
+    "test": "xss-scan",
+    "dev": "bun run --watch src/index.ts",
+    "build": "NODE_ENV=production bun build ./src/index.ts --outdir ./dist --minify --target bun",
+    "build-exec": "NODE_ENV=production bun build ./src/index.ts --compile --outfile ./dist/xen-wishlist --minify --target bun"
+  },
+  "dependencies": {
+    "@elysiajs/static": "^0.8.1",
+    "@elysiajs/stream": "^0.8.0",
+    "@kitajs/html": "^3.0.10",
+    "@kitajs/ts-html-plugin": "^1.3.3",
+    "elysia": "^0.8.8",
+    "kysely": "^0.27.2",
+    "kysely-bun-worker": "^0.5.6"
+  },
+  "devDependencies": {
+    "bun-types": "^1.0.21"
+  },
+  "module": "src/index.js"
+}
