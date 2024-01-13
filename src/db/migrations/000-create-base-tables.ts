@@ -1,15 +1,16 @@
-import { Kysely } from 'kysely';
+import { Kysely, sql } from 'kysely';
 
 export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema
 		.createTable('items')
 		.addColumn('id', 'integer', (col) => col.primaryKey())
 		.addColumn('status', 'integer', (col) => col.defaultTo(0).notNull())
+		.addColumn('lastStatusChange', 'integer', (col) => col.notNull())
 		.addColumn('type', 'integer', (col) => col.notNull())
 		.addColumn('name', 'text', (col) => col.notNull().unique())
 		.addColumn('poster', 'text')
 		.addColumn('createdBy', 'text', (col) => col.notNull().references('users.jellyfinId'))
-		.addColumn('createdAt', 'text', (col) => col.defaultTo(new Date().toISOString()).notNull())
+		.addColumn('createdAt', 'integer', (col) => col.notNull())
 		.addColumn('year', 'integer', (col) => col.notNull())
 		.addColumn('imdbId', 'text')
 		.addColumn('tmdbId', 'text')

@@ -1,6 +1,8 @@
-function handleCloseModal(e){
+function handleCloseModal(e, action){
 	e.stopImmediatePropagation();
 	if (e.currentTarget !== e.target) return;
+
+	if(!document.querySelector('#modal-addedit form').checkValidity() && action == 'save') return;
 
 	closeModal(e.target.closest('.modal-container'));
 }

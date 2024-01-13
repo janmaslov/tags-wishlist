@@ -1,19 +1,22 @@
-import Elysia, { t } from "elysia";
-import { addWishlistItem, renderWishlist } from "../handlers";
-import { AddModal } from "../views/components/modals/AddModal";
+/* import Elysia, { t } from "elysia";
+import { addWishlistItem, getUser, isAdmin, renderWishlist } from "../handlers";
+import { AddEditModal } from "../views/components/modals/AddEditModal";
 import { ErrorModal } from "../views/components/modals/ErrorModal";
 import { emitWishlistRefreshEvent } from ".";
 
 const wishlistRoutes = (app: Elysia) => app
 	.group('/wishlist', (app) => app
-		.get('/add', async ({ set }) => {
+		.get('/add', async ({ set, cookie }) => {
 			set.headers['Content-Type'] = 'text/html; charset=utf8';
-			return await AddModal();
+			return await AddEditModal({admin: isAdmin(cookie.jellyfinId as unknown as string ?? '')});
 		})
-		.post('/add', async ({ set, body }) => {
+		.post('/add', async ({ set, body, cookie }) => {
 			try{
+				const user = await getUser(cookie.jellyfinId as unknown as string);
+
 				await addWishlistItem(body);
-				emitWishlistRefreshEvent(await renderWishlist());
+
+				emitWishlistRefreshEvent(await renderWishlist(user));
 			}catch(e: any){
 				console.error(e);
 				set.headers['Content-Type'] = 'text/html; charset=utf8';
@@ -39,4 +42,4 @@ const wishlistRoutes = (app: Elysia) => app
 		})
 	)
 
-export default wishlistRoutes;
+export default wishlistRoutes; */

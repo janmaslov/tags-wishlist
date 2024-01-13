@@ -1,4 +1,4 @@
-import Elysia from "elysia";
+/* import Elysia from "elysia";
 import { renderIndexPage } from "../handlers";
 import { app } from "..";
 
@@ -25,4 +25,4 @@ export const emitWishlistRefreshEvent = (wishlist: string) => {
 	app.server?.publish('refreshList', wishlist);
 }
 
-export default indexRoutes;
+export default indexRoutes; */
