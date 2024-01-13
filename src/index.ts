@@ -10,6 +10,7 @@ import { ErrorModal } from './views/components/modals/ErrorModal';
 
 const staticFilesDir = Bun.env.NODE_ENV === 'production' ? join(dirname(Bun.main), '..', 'public') : 'public';
 export const basePath = Bun.env.BASE_PATH ?? '/base';
+console.log(basePath);
 
 export const app = new Elysia({prefix: basePath})
 	.onError(console.error)
@@ -19,12 +20,12 @@ export const app = new Elysia({prefix: basePath})
 	}))
 	.use(cookie())
 
-	.get('/', async ({ set, jwt, cookie: { auth, jellyfinId } }) => {
-		const jwtauth = await jwt.verify(auth);
+	.get('/', async ({ set, jwt, cookie: { wishlistauth, jellyfinId } }) => {
+		const jwtauth = await jwt.verify(wishlistauth);
 
 		if(!jwtauth){
 			set.status = 401;
-			set.redirect = '/sign-in';
+			set.redirect = `${basePath}/sign-in`;
 			return 'Unauthorized';
 		}
 
@@ -46,11 +47,11 @@ export const app = new Elysia({prefix: basePath})
 		perMessageDeflate: true
 	})
 
-	.get('/sign-in', async ({ set, jwt, cookie: { auth } }) => {
-		const jwtauth = await jwt.verify(auth);
+	.get('/sign-in', async ({ set, jwt, cookie: { wishlistauth } }) => {
+		const jwtauth = await jwt.verify(wishlistauth);
 
 		if(jwtauth){
-			set.redirect = '/';
+			set.redirect = basePath;
 			return '';
 		}
 
@@ -70,25 +71,28 @@ export const app = new Elysia({prefix: basePath})
 				name: jellyfinAuth.User.Name
 			};
 
-			setCookie('auth', await jwt.sign(user), {
+			setCookie('wishlistauth', await jwt.sign(user), {
 				httpOnly: true,
 				maxAge: 7 * 86400,
+				path: '/wishlist'
 			});
 			setCookie('jellyfinId', user.jellyfinId, {
 				httpOnly: true,
 				maxAge: 7 * 86400,
+				path: '/wishlist'
 			});
 			setCookie('name', user.name, {
 				httpOnly: true,
 				maxAge: 7 * 86400,
+				path: '/wishlist'
 			});
 
-			set.redirect = '/';
+			set.redirect = basePath;
 			return '';
 		}catch(e: any){
 			console.error(`username: ${body.username ?? '%undefined%'} couldn't log in:`, e.message);
 			set.status = 401;
-			set.redirect = '/sign-in';
+			set.redirect = `${basePath}/sign-in`;
 			return '';
 		}
 	}, {
@@ -98,8 +102,8 @@ export const app = new Elysia({prefix: basePath})
 		})
 	})
 	.get('/sign-out', async ({ removeCookie, set }) => {
-		removeCookie('auth');
-		set.redirect = '/sign-in';
+		removeCookie('wishlistauth');
+		set.redirect = `${basePath}/sign-in`;
 		return '';
 	})
 

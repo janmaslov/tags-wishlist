@@ -32,10 +32,9 @@ export const Base = (props: Html.PropsWithChildren) => {
 					<script src={`${basePath}/public/htmx@1.9.10.min.js`}></script>
 					<meta name="description" content="" />
 
-					<meta property="og:title" content="" />
-					<meta property="og:type" content="" />
-					<meta property="og:url" content="" />
-					<meta property="og:image" content="" />
+					<meta property="og:title" content="Xen Wunschliste" />
+					<meta property="og:type" content="website" />
+					<meta property="og:image" content="https://xen.maslov.io/wishlist/public/gonarch.png" />
 
 					<link rel="icon" href={`${basePath}/public/favicon.ico`} sizes="any" />
 					<link rel="apple-touch-icon" href={`${basePath}/public/apple-touch-icon.png`} />

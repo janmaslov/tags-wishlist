@@ -13,7 +13,6 @@ export interface Databases {
 
 console.log('db_path', Bun.env.DB_PATH);
 const dbPath = Bun.env.NODE_ENV === 'production' ? Bun.env.DB_PATH ?? dirname(Bun.main) : join(dirname(Bun.main), '..', 'db.sqlite');
-await mkdir(dirname(dbPath), {recursive: true});
 console.log('dbPath', dbPath);
 
 const db = new Kysely<Databases>({
