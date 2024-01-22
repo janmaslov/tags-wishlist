@@ -18,7 +18,7 @@ export const Index = ({ items, archivedItems, user }: Html.PropsWithChildren & {
 				</div>
 
 				<details>
-					<summary><span>Archiv</span></summary>
+					<summary><span>Archiv ({archivedItems?.length ?? 0})</span></summary>
 					<div hx-ext="ws" ws-connect={`${basePath}/refresharchived`}>
 						<Wishlist id="wishlist-archive" items={archivedItems} user={user} />
 					</div>
