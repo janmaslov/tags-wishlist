@@ -10,7 +10,7 @@ export const AddEditModal = ({item, admin}: { item?: ItemData, admin: boolean })
 	return (
 		<ModalBase id={`modal-addedit`}>
 			<div class="modal-header">
-				<h1 class="h3">Neuen Eintrag erstellen</h1>
+				<h1 class="h3">{!!item ? 'Eintrag bearbeiten' : 'Neuen Eintrag erstellen'}</h1>
 			</div>
 			<form hx-post={`${basePath}/wishlist/${!!item ? 'edit' : 'add'}`}>
 				<div class="modal-content">

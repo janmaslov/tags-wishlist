@@ -17,6 +17,10 @@ export function parseItemStatus(status?: WishlistItemStatus){
 				label: 'Wird nicht hinzugefügt',
 				class: 'item-status-wontadd'
 			};
+		case WishlistItemStatus.Archived:
+			return {
+				label: 'Archiviert'
+			};
 		default:
 			return {
 				label: 'Unbekannt'

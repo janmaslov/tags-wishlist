@@ -682,6 +682,12 @@ body:has(.modal-container){
 	background-color: #cf2836;
 }
 
+/* details collapsible */
+details > summary{
+	cursor: pointer;
+	margin: 1rem 0;
+}
+
 /* add image modal */
 #modal-addedit #container-poster, #modal-addedit #container-poster > svg, #modal-addedit #container-poster > img, #modal-addedit #container-poster > input[type="image"]{
 	display: block;

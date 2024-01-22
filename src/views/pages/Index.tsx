@@ -4,7 +4,7 @@ import { Base } from "../Base";
 import { Nav } from "../components/Nav";
 import { Wishlist } from "../components/Wishlist";
 
-export const Index = ({ items, user }: Html.PropsWithChildren & { items?: ItemData[], user?: User }) => {
+export const Index = ({ items, archivedItems, user }: Html.PropsWithChildren & { items?: ItemData[], archivedItems?: ItemData[], user?: User }) => {
 	return (
 		<Base>
 			<div class="container">
@@ -14,8 +14,15 @@ export const Index = ({ items, user }: Html.PropsWithChildren & { items?: ItemDa
 				</div>
 				<Nav />
 				<div hx-ext="ws" ws-connect={`${basePath}/refreshlist`}>
-					<Wishlist items={items} user={user} />
+					<Wishlist id="wishlist" items={items} user={user} />
 				</div>
+
+				<details>
+					<summary><span>Archiv</span></summary>
+					<div hx-ext="ws" ws-connect={`${basePath}/refresharchived`}>
+						<Wishlist id="wishlist-archive" items={archivedItems} user={user} />
+					</div>
+				</details>
 			</div>
 		</Base>
 	);

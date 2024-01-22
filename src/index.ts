@@ -7,10 +7,10 @@ import jwt from '@elysiajs/jwt';
 import { renderIndexPage, addWishlistItem, renderWishlist, getOrCreateUser, renderSignInPage, authenticateWithJellyfin, getUser, isAdmin, getWishlistItem, editWishlistItem, deleteWishlistItem } from './handlers';
 import { AddEditModal } from './views/components/modals/AddEditModal';
 import { ErrorModal } from './views/components/modals/ErrorModal';
+import { User } from './types';
 
 const staticFilesDir = Bun.env.NODE_ENV === 'production' ? join(dirname(Bun.main), '..', 'public') : 'public';
-export const basePath = Bun.env.BASE_PATH ?? '/base';
-console.log(basePath);
+export const basePath = Bun.env.BASE_PATH ?? '';
 
 export const app = new Elysia({prefix: basePath})
 	.onError(console.error)
@@ -36,12 +36,24 @@ export const app = new Elysia({prefix: basePath})
 	})
 	.ws('/refreshlist', {
 		open: (ws) => {
-			console.log('subscribe', ws.id);
+			console.log('subscribe list update', ws.id);
 			ws.subscribe('refreshList');
 		},
 		close: (ws) => {
-			console.log('remove', ws.id);
+			console.log('remove list update', ws.id);
 			ws.unsubscribe('refreshList');
+		},
+		error: (e) => console.error(e.error),
+		perMessageDeflate: true
+	})
+	.ws('/refresharchived', {
+		open: (ws) => {
+			console.log('subscribe archived update', ws.id);
+			ws.subscribe('refreshArchived');
+		},
+		close: (ws) => {
+			console.log('remove archived update', ws.id);
+			ws.unsubscribe('refreshArchived');
 		},
 		error: (e) => console.error(e.error),
 		perMessageDeflate: true
@@ -51,7 +63,7 @@ export const app = new Elysia({prefix: basePath})
 		const jwtauth = await jwt.verify(wishlistauth);
 
 		if(jwtauth){
-			set.redirect = basePath;
+			set.redirect = !!basePath ? basePath : '/';
 			return '';
 		}
 
@@ -74,20 +86,20 @@ export const app = new Elysia({prefix: basePath})
 			setCookie('wishlistauth', await jwt.sign(user), {
 				httpOnly: true,
 				maxAge: 7 * 86400,
-				path: '/wishlist'
+				path: !!basePath ? basePath : '/'
 			});
 			setCookie('jellyfinId', user.jellyfinId, {
 				httpOnly: true,
 				maxAge: 7 * 86400,
-				path: '/wishlist'
+				path: !!basePath ? basePath : '/'
 			});
 			setCookie('name', user.name, {
 				httpOnly: true,
 				maxAge: 7 * 86400,
-				path: '/wishlist'
+				path: !!basePath ? basePath : '/'
 			});
 
-			set.redirect = basePath;
+			set.redirect = !!basePath ? basePath : '/';
 			return '';
 		}catch(e: any){
 			console.error(`username: ${body.username ?? '%undefined%'} couldn't log in:`, e.message);
@@ -116,7 +128,10 @@ export const app = new Elysia({prefix: basePath})
 			try{
 				const user = await getOrCreateUser(jellyfinId, name);
 				await addWishlistItem({...body, ...{createdBy: user.jellyfinId}});
-				emitWishlistRefreshEvent(await renderWishlist(user));
+				await Promise.all([
+					emitWishlistRefreshEvent(user),
+					emitArchivedlistRefreshEvent(user)
+				]);
 			}catch(e: any){
 				console.error(e);
 				set.headers['Content-Type'] = 'text/html; charset=utf8';
@@ -151,7 +166,10 @@ export const app = new Elysia({prefix: basePath})
 			try{
 				const user = await getOrCreateUser(jellyfinId, name);
 				await editWishlistItem(body);
-				emitWishlistRefreshEvent(await renderWishlist(user));
+				await Promise.all([
+					emitWishlistRefreshEvent(user),
+					emitArchivedlistRefreshEvent(user)
+				]);
 			}catch(e: any){
 				console.error(e);
 				set.headers['Content-Type'] = 'text/html; charset=utf8';
@@ -182,7 +200,10 @@ export const app = new Elysia({prefix: basePath})
 			if(!user) return '';
 
 			const deleteResult = await deleteWishlistItem(Number(itemId), user?.jellyfinId);
-			emitWishlistRefreshEvent(await renderWishlist(user));
+			await Promise.all([
+				emitWishlistRefreshEvent(user),
+				emitArchivedlistRefreshEvent(user)
+			]);
 
 			return '';
 		})
@@ -192,7 +213,13 @@ export const app = new Elysia({prefix: basePath})
 
 console.log(`(${Bun.env.NODE_ENV}) 🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`);
 
-export const emitWishlistRefreshEvent = (wishlist: string) => {
+const emitWishlistRefreshEvent = async (user: User) => {
+	const wishlist = await renderWishlist(user, false);
 	console.log('publish refreshList');
 	app.server?.publish('refreshList', wishlist);
+}
+const emitArchivedlistRefreshEvent = async (user: User) => {
+	const wishlist = await renderWishlist(user, true);
+	console.log('publish archivedList');
+	app.server?.publish('refreshArchived', wishlist);
 }

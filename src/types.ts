@@ -13,7 +13,8 @@ export enum WishlistItemType{
 export enum WishlistItemStatus{
 	Pending,
 	Added,
-	WillNotAdd
+	WillNotAdd,
+	Archived
 }
 
 export interface WishlistItemTable{
