@@ -133,3 +133,4 @@ dist
 **/*.bun
 
 **/*.sqlite
+*.sqlite
