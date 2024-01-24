@@ -119,6 +119,7 @@ button, .btn{
 	padding: 0.5rem 0.75rem;
 	border: none;
 	border-radius: 0.25rem;
+	font-family: inherit;
 	font-size: 1em;
 	color: inherit;
 	background-color: transparent;

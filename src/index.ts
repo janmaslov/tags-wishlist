@@ -127,7 +127,9 @@ export const app = new Elysia({prefix: basePath})
 		.post('/add', async ({ set, body, cookie: { jellyfinId, name } }) => {
 			try{
 				const user = await getOrCreateUser(jellyfinId, name);
+
 				await addWishlistItem({...body, ...{createdBy: user.jellyfinId}});
+
 				await Promise.all([
 					emitWishlistRefreshEvent(user),
 					emitArchivedlistRefreshEvent(user)
@@ -165,7 +167,9 @@ export const app = new Elysia({prefix: basePath})
 		.post('/edit', async ({ set, body, cookie: { jellyfinId, name } }) => {
 			try{
 				const user = await getOrCreateUser(jellyfinId, name);
+
 				await editWishlistItem(body);
+
 				await Promise.all([
 					emitWishlistRefreshEvent(user),
 					emitArchivedlistRefreshEvent(user)

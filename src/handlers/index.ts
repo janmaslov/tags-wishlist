@@ -56,6 +56,7 @@ export const getWishlist = async (archived: boolean) => {
 	const items = await db
 		.selectFrom('items')
 		.where('status', archived ? '=' : '!=', WishlistItemStatus.Archived)
+		.orderBy('lastStatusChange desc')
 		.selectAll()
 		.execute();
 
@@ -92,11 +93,17 @@ export const editWishlistItem = async (item: WishlistItemUpdate) => {
 
 	delete diff.id;
 
-	return await db.updateTable('items').set(item).where('id', '=', itemBeforeUpdate.id).executeTakeFirst();
+	return await db.updateTable('items').set(diff).where('id', '=', itemBeforeUpdate.id).executeTakeFirst();
 }
 
 export const deleteWishlistItem = async (id: number, jellyfinId: string) => {
-	return await db.deleteFrom('items').where('id', '=', id).where('createdBy', '=', jellyfinId).executeTakeFirst();
+	let query = db.deleteFrom('items').where('id', '=', id);
+
+	if(!isAdmin(jellyfinId)){
+		query = query.where('createdBy', '=', jellyfinId);
+	}
+
+	return await query.executeTakeFirst();
 }
 
 export const getOrCreateUser = async (jellyfinId: string, name: string) => {
