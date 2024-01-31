@@ -42,7 +42,7 @@ export const AddEditModal = ({item, admin}: { item?: ItemData, admin: boolean })
 										<select id="type" name="type" autofocus required>
 											{
 												(Object.keys(WishlistItemType).filter((v) => isNaN(Number(v))) as (keyof typeof WishlistItemType)[]).map((_, index) =>
-													<option value={index.toString()} selected={item?.status == index}>{itemTypeToString(index)}</option>
+													<option value={index.toString()} selected={item?.type == index}>{itemTypeToString(index)}</option>
 												)
 											}
 										</select>

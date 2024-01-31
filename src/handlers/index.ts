@@ -93,6 +93,8 @@ export const editWishlistItem = async (item: WishlistItemUpdate) => {
 
 	delete diff.id;
 
+	if(Object.keys(diff).length === 0) return;
+
 	return await db.updateTable('items').set(diff).where('id', '=', itemBeforeUpdate.id).executeTakeFirst();
 }
 
