@@ -6,7 +6,7 @@ import { Index } from '../views/pages/Index';
 import { SignIn } from '../views/pages/SignIn';
 
 export const authenticateWithJellyfin = async (username: string, password: string) => {
-	const res = await fetch('https://xen.maslov.io/Users/AuthenticateByName', {
+	const res = await fetch(`${Bun.env.JELLYFIN_BASE_URL}/Users/AuthenticateByName`, {
 		method: 'POST',
 		redirect: 'follow',
 		headers: {
@@ -123,7 +123,9 @@ export const getOrCreateUser = async (jellyfinId: string, name: string) => {
 	}
 }
 
-export const getUser = async (jellyfinId: string) => {
+export const getUser = async (jellyfinId?: string) => {
+	if(!jellyfinId || (jellyfinId?.length ?? 0) === 0) return;
+
 	return await db.selectFrom('users').selectAll().where('jellyfinId', '=', jellyfinId).executeTakeFirst();
 }
 

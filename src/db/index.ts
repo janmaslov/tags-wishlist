@@ -1,5 +1,4 @@
 import { join, dirname } from "node:path";
-import { mkdir } from "node:fs/promises";
 import { Kysely, Migrator } from 'kysely';
 import { UserTable, WishlistItemTable } from '../types';
 import { CustomMigrationProvider } from "./CustomMigrationProvider";

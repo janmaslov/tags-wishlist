@@ -1,16 +1,19 @@
 import '@kitajs/html/register';
 import { Elysia, t } from 'elysia';
+import { ElysiaWS } from 'elysia/ws';
 import { staticPlugin } from '@elysiajs/static'
 import { join, dirname } from 'path';
 import cookie from '@elysiajs/cookie';
 import jwt from '@elysiajs/jwt';
-import { renderIndexPage, addWishlistItem, renderWishlist, getOrCreateUser, renderSignInPage, authenticateWithJellyfin, getUser, isAdmin, getWishlistItem, editWishlistItem, deleteWishlistItem } from './handlers';
+import { renderIndexPage, addWishlistItem, renderWishlist, renderSignInPage, authenticateWithJellyfin, getUser, isAdmin, getWishlistItem, editWishlistItem, deleteWishlistItem, createUser, getOrCreateUser } from './handlers';
 import { AddEditModal } from './views/components/modals/AddEditModal';
 import { ErrorModal } from './views/components/modals/ErrorModal';
 import { User } from './types';
 
 const staticFilesDir = Bun.env.NODE_ENV === 'production' ? join(dirname(Bun.main), '..', 'public') : 'public';
 export const basePath = Bun.env.BASE_PATH ?? '';
+
+const updatableUsers: Array<{ws: ElysiaWS<any, any, any>, user: User}> = [];
 
 export const app = new Elysia({prefix: basePath})
 	.onError(console.error)
@@ -35,11 +38,15 @@ export const app = new Elysia({prefix: basePath})
 		return await renderIndexPage(user);
 	})
 	.ws('/refreshlist', {
-		open: (ws) => {
+		open: async (ws) => {
+			if(!(await registerWebSocketUser(ws, ws.data.cookie.jellyfinId))) return;
+
 			console.log('subscribe list update', ws.id);
 			ws.subscribe('refreshList');
 		},
 		close: (ws) => {
+			removeWebSocketUser(ws.data.cookie.jellyfinId);
+
 			console.log('remove list update', ws.id);
 			ws.unsubscribe('refreshList');
 		},
@@ -47,11 +54,15 @@ export const app = new Elysia({prefix: basePath})
 		perMessageDeflate: true
 	})
 	.ws('/refresharchived', {
-		open: (ws) => {
+		open: async (ws) => {
+			if(!(await registerWebSocketUser(ws, ws.data.cookie.jellyfinId))) return;
+
 			console.log('subscribe archived update', ws.id);
 			ws.subscribe('refreshArchived');
 		},
 		close: (ws) => {
+			removeWebSocketUser(ws.data.cookie.jellyfinId);
+
 			console.log('remove archived update', ws.id);
 			ws.unsubscribe('refreshArchived');
 		},
@@ -78,10 +89,7 @@ export const app = new Elysia({prefix: basePath})
 
 			if(!(jellyfinAuth instanceof Object)) throw new Error('Unauthorized');
 
-			const user = {
-				jellyfinId: jellyfinAuth.User.Id,
-				name: jellyfinAuth.User.Name
-			};
+			const user = await getOrCreateUser(jellyfinAuth.User.Id, jellyfinAuth.User.Name);
 
 			setCookie('wishlistauth', await jwt.sign(user), {
 				httpOnly: true,
@@ -124,15 +132,16 @@ export const app = new Elysia({prefix: basePath})
 			set.headers['Content-Type'] = 'text/html; charset=utf8';
 			return await AddEditModal({admin: isAdmin(cookie.jellyfinId as unknown as string ?? '')});
 		})
-		.post('/add', async ({ set, body, cookie: { jellyfinId, name } }) => {
+		.post('/add', async ({ set, body, cookie: { jellyfinId } }) => {
 			try{
-				const user = await getOrCreateUser(jellyfinId, name);
+				const user = await getUser(jellyfinId);
+				if(!user) throw new Error('User not found!');
 
 				await addWishlistItem({...body, ...{createdBy: user.jellyfinId}});
 
 				await Promise.all([
-					emitWishlistRefreshEvent(user),
-					emitArchivedlistRefreshEvent(user)
+					emitWishlistRefreshEvent(),
+					emitArchivedlistRefreshEvent()
 				]);
 			}catch(e: any){
 				console.error(e);
@@ -158,21 +167,22 @@ export const app = new Elysia({prefix: basePath})
 				tvdbId: t.Optional(t.String())
 			})
 		})
-		.get('/edit/:itemId', async ({ set, cookie, params: {itemId} }) => {
+		.get('/edit/:itemId', async ({ set, cookie, params: { itemId } }) => {
 			const item = await getWishlistItem(Number(itemId));
 
 			set.headers['Content-Type'] = 'text/html; charset=utf8';
 			return await AddEditModal({item, admin: isAdmin(cookie.jellyfinId as unknown as string ?? '')});
 		})
-		.post('/edit', async ({ set, body, cookie: { jellyfinId, name } }) => {
+		.post('/edit', async ({ set, body, cookie: { jellyfinId } }) => {
 			try{
-				const user = await getOrCreateUser(jellyfinId, name);
+				const user = await getUser(jellyfinId);
+				if(!user) throw new Error('User not found!');
 
 				await editWishlistItem(body);
 
 				await Promise.all([
-					emitWishlistRefreshEvent(user),
-					emitArchivedlistRefreshEvent(user)
+					emitWishlistRefreshEvent(),
+					emitArchivedlistRefreshEvent()
 				]);
 			}catch(e: any){
 				console.error(e);
@@ -198,32 +208,61 @@ export const app = new Elysia({prefix: basePath})
 				tvdbId: t.Optional(t.String())
 			})
 		})
-		.post('/delete/:itemId', async ({ params: {itemId}, cookie: {jellyfinId} }) => {
+		.post('/delete/:itemId', async ({ params: {itemId}, cookie: { jellyfinId } }) => {
 			const user = await getUser(jellyfinId);
 
 			if(!user) return '';
 
-			const deleteResult = await deleteWishlistItem(Number(itemId), user?.jellyfinId);
+			const deleteResult = await deleteWishlistItem(Number(itemId), user.jellyfinId);
 			await Promise.all([
-				emitWishlistRefreshEvent(user),
-				emitArchivedlistRefreshEvent(user)
+				emitWishlistRefreshEvent(),
+				emitArchivedlistRefreshEvent()
 			]);
 
 			return '';
 		})
 	)
-
 	.listen(3000);
 
 console.log(`(${Bun.env.NODE_ENV}) 🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`);
 
-const emitWishlistRefreshEvent = async (user: User) => {
-	const wishlist = await renderWishlist(user, false);
-	console.log('publish refreshList');
-	app.server?.publish('refreshList', wishlist);
+const registerWebSocketUser = async (ws: ElysiaWS<any, any, any>, jellyfinId: string) => {
+	const user = await getUser(ws.data.cookie.jellyfinId);
+
+	if(!user || updatableUsers.some(userRef => userRef.user.jellyfinId === jellyfinId)) return false;
+
+	updatableUsers.push({ws: ws, user: user});
+
+	return true;
 }
-const emitArchivedlistRefreshEvent = async (user: User) => {
-	const wishlist = await renderWishlist(user, true);
-	console.log('publish archivedList');
-	app.server?.publish('refreshArchived', wishlist);
+const removeWebSocketUser = (jellyfinId: string) => {
+	const foundUserIndex = updatableUsers.findIndex(usr => usr.user.jellyfinId === jellyfinId);
+
+	if(foundUserIndex > -1){
+		updatableUsers.splice(foundUserIndex, 1);
+		return true;
+	}
+
+	return false;
+}
+
+const emitWishlistRefreshEvent = async () => {
+	for(const userRef of updatableUsers){
+		if(!userRef.ws.isSubscribed('refreshList')) continue;
+
+		const wishlist = await renderWishlist(userRef.user, false);
+		userRef.ws.publish('refreshList', wishlist);
+	}
+
+	console.log('publish refreshList');
+}
+const emitArchivedlistRefreshEvent = async () => {
+	for(const userRef of updatableUsers){
+		if(!userRef.ws.isSubscribed('refreshArchived')) continue;
+
+		const wishlist = await renderWishlist(userRef.user, true);
+		userRef.ws.publish('refreshArchived', wishlist);
+	}
+
+	console.log('publish refreshArchived');
 }
