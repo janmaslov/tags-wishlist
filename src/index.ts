@@ -13,7 +13,7 @@ import { User } from './types';
 const staticFilesDir = Bun.env.NODE_ENV === 'production' ? join(dirname(Bun.main), '..', 'public') : 'public';
 export const basePath = Bun.env.BASE_PATH ?? '';
 
-const updatableUsers: Array<{ws: ElysiaWS<any, any, any>, user: User}> = [];
+const updatableSockets: Array<{ws: ElysiaWS<any, any, any>, user: User}> = [];
 
 export const app = new Elysia({prefix: basePath})
 	.onError(console.error)
@@ -45,7 +45,7 @@ export const app = new Elysia({prefix: basePath})
 			ws.subscribe('refreshList');
 		},
 		close: (ws) => {
-			removeWebSocketUser(ws.data.cookie.jellyfinId);
+			removeWebSocketUser(ws.id);
 
 			console.log('remove list update', ws.id);
 			ws.unsubscribe('refreshList');
@@ -61,7 +61,7 @@ export const app = new Elysia({prefix: basePath})
 			ws.subscribe('refreshArchived');
 		},
 		close: (ws) => {
-			removeWebSocketUser(ws.data.cookie.jellyfinId);
+			removeWebSocketUser(ws.id);
 
 			console.log('remove archived update', ws.id);
 			ws.unsubscribe('refreshArchived');
@@ -227,19 +227,19 @@ export const app = new Elysia({prefix: basePath})
 console.log(`(${Bun.env.NODE_ENV}) 🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`);
 
 const registerWebSocketUser = async (ws: ElysiaWS<any, any, any>, jellyfinId: string) => {
-	const user = await getUser(ws.data.cookie.jellyfinId);
+	const user = await getUser(jellyfinId);
 
-	if(!user || updatableUsers.some(userRef => userRef.user.jellyfinId === jellyfinId)) return false;
+	if(!user) return false;
 
-	updatableUsers.push({ws: ws, user: user});
+	updatableSockets.push({ws: ws, user: user});
 
 	return true;
 }
-const removeWebSocketUser = (jellyfinId: string) => {
-	const foundUserIndex = updatableUsers.findIndex(usr => usr.user.jellyfinId === jellyfinId);
+const removeWebSocketUser = (wsId: string) => {
+	const foundSocketIndex = updatableSockets.findIndex(usr => usr.ws.id === wsId);
 
-	if(foundUserIndex > -1){
-		updatableUsers.splice(foundUserIndex, 1);
+	if(foundSocketIndex > -1){
+		updatableSockets.splice(foundSocketIndex, 1);
 		return true;
 	}
 
@@ -247,17 +247,17 @@ const removeWebSocketUser = (jellyfinId: string) => {
 }
 
 const emitWishlistRefreshEvent = async () => {
-	for(const userRef of updatableUsers){
-		if(!userRef.ws.isSubscribed('refreshList')) continue;
+	for(const socketRef of updatableSockets){
+		if(!socketRef.ws.isSubscribed('refreshList')) continue;
 
-		const wishlist = await renderWishlist(userRef.user, false);
-		userRef.ws.publish('refreshList', wishlist);
+		const wishlist = await renderWishlist(socketRef.user, false);
+		socketRef.ws.publish('refreshList', wishlist);
 	}
 
 	console.log('publish refreshList');
 }
 const emitArchivedlistRefreshEvent = async () => {
-	for(const userRef of updatableUsers){
+	for(const userRef of updatableSockets){
 		if(!userRef.ws.isSubscribed('refreshArchived')) continue;
 
 		const wishlist = await renderWishlist(userRef.user, true);
