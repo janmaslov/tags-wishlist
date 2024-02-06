@@ -19,7 +19,7 @@ export const app = new Elysia({prefix: basePath})
 	.onError(console.error)
 	.use(staticPlugin({assets: staticFilesDir, alwaysStatic: false, enableDecodeURI: true, indexHTML: false, prefix: '/public'}))
 	.use(jwt({
-		secret: 'U3^ei~UFN5*rhXT^+}**~FCVVY)$lj:h=KZt^e+,9@.;Sslqc}8nio5itq^Or'
+		secret: Bun.env.JWT_SECRET!
 	}))
 	.use(cookie())
 
@@ -107,6 +107,8 @@ export const app = new Elysia({prefix: basePath})
 				path: !!basePath ? basePath : '/'
 			});
 
+			console.log(`User ${user.name} signed in`);
+
 			set.redirect = !!basePath ? basePath : '/';
 			return '';
 		}catch(e: any){
@@ -138,6 +140,7 @@ export const app = new Elysia({prefix: basePath})
 				if(!user) throw new Error('User not found!');
 
 				await addWishlistItem({...body, ...{createdBy: user.jellyfinId}});
+				console.log(`${user.name} added item ${body.name} (${body.year})`);
 
 				await Promise.all([
 					emitWishlistRefreshEvent(),
@@ -179,6 +182,7 @@ export const app = new Elysia({prefix: basePath})
 				if(!user) throw new Error('User not found!');
 
 				await editWishlistItem(body);
+				console.log(`${user.name} edited item ${body.id}`);
 
 				await Promise.all([
 					emitWishlistRefreshEvent(),
@@ -190,8 +194,6 @@ export const app = new Elysia({prefix: basePath})
 				set.status = 500;
 				return await ErrorModal(e.message);
 			}
-
-			return '';
 		}, {
 			body: t.Object({
 				id: t.Optional(t.Numeric()),
@@ -214,6 +216,8 @@ export const app = new Elysia({prefix: basePath})
 			if(!user) return '';
 
 			const deleteResult = await deleteWishlistItem(Number(itemId), user.jellyfinId);
+			console.log(`User ${user.name} deleted item ${itemId}`);
+
 			await Promise.all([
 				emitWishlistRefreshEvent(),
 				emitArchivedlistRefreshEvent()
@@ -251,17 +255,17 @@ const emitWishlistRefreshEvent = async () => {
 		if(!socketRef.ws.isSubscribed('refreshList')) continue;
 
 		const wishlist = await renderWishlist(socketRef.user, false);
-		socketRef.ws.publish('refreshList', wishlist);
+		socketRef.ws.send(wishlist);
 	}
 
 	console.log('publish refreshList');
 }
 const emitArchivedlistRefreshEvent = async () => {
-	for(const userRef of updatableSockets){
-		if(!userRef.ws.isSubscribed('refreshArchived')) continue;
+	for(const socketRef of updatableSockets){
+		if(!socketRef.ws.isSubscribed('refreshArchived')) continue;
 
-		const wishlist = await renderWishlist(userRef.user, true);
-		userRef.ws.publish('refreshArchived', wishlist);
+		const wishlist = await renderWishlist(socketRef.user, true);
+		socketRef.ws.send(wishlist);
 	}
 
 	console.log('publish refreshArchived');
