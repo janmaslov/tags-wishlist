@@ -9,6 +9,7 @@ import { renderIndexPage, addWishlistItem, renderWishlist, renderSignInPage, aut
 import { AddEditModal } from './views/components/modals/AddEditModal';
 import { ErrorModal } from './views/components/modals/ErrorModal';
 import { User } from './types';
+import { logger } from 'logixlysia';
 
 const staticFilesDir = Bun.env.NODE_ENV === 'production' ? join(dirname(Bun.main), '..', 'public') : 'public';
 export const basePath = Bun.env.BASE_PATH ?? '';
@@ -16,6 +17,7 @@ export const basePath = Bun.env.BASE_PATH ?? '';
 const updatableSockets: Array<{ws: ElysiaWS<any, any, any>, user: User}> = [];
 
 export const app = new Elysia({prefix: basePath})
+	.use(logger())
 	.onError(console.error)
 	.use(staticPlugin({assets: staticFilesDir, alwaysStatic: false, enableDecodeURI: true, indexHTML: false, prefix: '/public'}))
 	.use(jwt({
